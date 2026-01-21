@@ -1,17 +1,17 @@
-# Audio Feature Robustness Pipeline
+# Feature Selection Pipeline
 
 ## Project Description
 
-This repository implements a modular framework for evaluating and selecting features based on their robustness to noise and their responsiveness to enhancement algorithms on your data. 
+This repository implements a modular framework for selecting features based on their robustness to noise and their responsiveness to enhancement algorithms on your data. 
 
-Initially designed for noise reduction in audio analysis, this pipeline separates the feature engineering process into discrete stages: **Filtering** (VAD, Diarization), **Transformation** (Denoising), and **Selection** (Feature Stability).
+Initially designed for noise reduction in audio analysis, this pipeline separates the feature engineering process into discrete stages: Filtering, Transformation, and Selection. The initial design relied on the following tools for the three stages: **Filtering** (SilenceRemoval, Voice Activity Detection, Diarization), **Transformation** (Denoising), and **Selection** (Pearson Correlation Coefficient).
 
 The core objective is to identify two distinct classes of features:
 
-1. **Robust Features:** Features that remain statistically stable regardless of degredation artifacts (in our case noise within audio).
-2. **Enhanced Features:** Features that become enhanced when the signal is transformed (in our case when audio is denoised).
+1. **Robust Features:** Features that remain stable regardless of degradation artifacts (in our case, noise within audio).
+2. **Enhanced Features:** Features that become enhanced when the signal is transformed (in our case, when audio is denoised).
 
-This implementation includes a demonstration using **OpenSMILE** for feature extraction, **Silero VAD** and **Pyannote** for filtering, **VisQOL** for quality assessment, and **Noise Reduce** for transformation of the signal.
+This implementation includes a demonstration using **OpenSMILE** for feature extraction, **Silero VAD** and **Pyannote** for filtering, **VisQOL** for quality assessment, and **Noise Reduce** for signal transformation.
 
 ## Prerequisites
 
