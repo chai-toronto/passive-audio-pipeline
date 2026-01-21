@@ -168,20 +168,10 @@ Swap your new classes into the pipeline in `main.py`:
 # ... inside main()
 selector = FeatureSelector(
     extractor=LibrosaMFCC(),       # Your custom extractor
-    transformation=NoiseReduce(),
-    characteristic_measure=VisQOL(),
-    distance_measure=PearsonCoefficient(),
-    change_threshold=0.05
+    transformation=NoiseReduce(),  # Your custom transformation function
+    characteristic_measure=VisQOL(), # Your custom characteristic measure
+    distance_measure=PearsonCoefficient(), # Your custom distance meausure
+    change_threshold=0.05 # Your change coefficient for your distance measure
 )
 
 ```
-
-## Citation
-
-If you use this repository in your research, please cite:
-
-[Insert Citation Here]
-
-## License
-
-[Insert License Here]
