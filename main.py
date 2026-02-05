@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
-
+from dotenv import load_dotenv
 from core.filter import FilterPipeline
 from core.feature_selection import RobustnessSelector
 from demo.noise_pipeline_demo import NoiseReduce 
@@ -18,6 +18,8 @@ def main():
     data = data.rename({0: "filename"}, axis=1)
     data['filename'] = "demo/audio_samples/" + data['filename']
 
+    load_dotenv() # Load environment variables
+
     filter = FilterPipeline()
     filter.add_filter(SilenceFilter())
     filter.add_filter(VAD())
@@ -30,10 +32,12 @@ def main():
         transformation=NoiseReduce(),
         characteristic_measure=VisQOL(),
         distance_measure=PearsonCoefficient(),
-        change_threshold=0.05
+        change_threshold=float(os.getenv("CHANGE_THRESHOLD", 0.05))
     )
 
-    results = selector.select(clean_data)
+    results = selector.select(clean_data, 
+        noise_thresh=float(os.getenv("NOISE_THRESHOLD", 2.5)),
+        correlation_threshold=float(os.getenv("CORRELATION_THRESHOLD", 0.75)))
 
     print(f"Robust Features: {results['robust']}")
     print(f"Enhanced Features: {results['enhanced']}")

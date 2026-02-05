@@ -1,81 +1,69 @@
-# Feature Selection Pipeline
+## 1. Project Description
 
-## Project Description
+This repository implements a modular framework for selecting features based on their robustness to noise and their responsiveness to enhancement algorithms.
 
-This repository implements a modular framework for selecting features based on their robustness to noise and their responsiveness to enhancement algorithms on your data. 
-
-Initially designed for noise reduction in audio analysis, this pipeline separates the feature engineering process into discrete stages: Filtering, Transformation, and Selection. The initial design relied on the following tools for the three stages: **Filtering** (SilenceRemoval, Voice Activity Detection, Diarization), **Transformation** (Denoising), and **Selection** (Pearson Correlation Coefficient).
+Initially designed for noise reduction in audio analysis, this pipeline separates the feature engineering process into discrete stages: **Filtering**, **Transformation**, and **Selection**. The initial design relied on the following tools for the three stages:
+* **Filtering:** Silence Removal, Voice Activity Detection (Silero), Diarization (Pyannote)
+* **Transformation:** Denoising (Noise Reduce)
+* **Selection:** Correlation & Quality Assessment (VisQOL)
 
 The core objective is to identify two distinct classes of features:
 
-1. **Robust Features:** Features that remain stable regardless of degradation artifacts (in our case, noise within audio).
-2. **Enhanced Features:** Features that become enhanced when the signal is transformed (in our case, when audio is denoised).
+1.  **Robust Features:** Features that remain stable regardless of degradation artifacts (in our case, noise within audio).
+2.  **Enhanced Features:** Features that become significantly improved when the signal is transformed (in our case, when audio is denoised).
 
 This implementation includes a demonstration using **OpenSMILE** for feature extraction, **Silero VAD** and **Pyannote** for filtering, **VisQOL** for quality assessment, and **Noise Reduce** for signal transformation.
 
-## Prerequisites
+While main.py executes a demonstration specifically focused on noise removal in speech, the framework is architected for broad extensibility. It is designed to be adapted for other domains and signal types—such as physiological data or time-series sensor readings—allowing researchers to swap in alternative tools for feature extraction, filtering, or transformation to test feature robustness in entirely new contexts.
 
-* **Python 3.10+**
-* **uv**
-* **System Dependencies:** `libsndfile` and `ffmpeg` are required for audio processing.
-* Ubuntu/Debian: `sudo apt-get install libsndfile1 ffmpeg`
-* macOS: `brew install libsndfile ffmpeg`
+---
 
+## 2. Installation & Execution
 
+**Prerequisites:**
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+* A [Hugging Face Token](https://huggingface.co/settings/tokens) (Required for Pyannote).
+    * *Note: You must accept the user conditions for `pyannote/speaker-diarization-3.1` on their model page.*
 
-### A Note on VisQOL
+**Steps:**
 
-This pipeline relies on **Google VisQOL** (Virtual Speech Quality Objective Listener) for the characteristic measurement step. VisQOL does not have a standard PyPI package and requires building the Python bindings from source using Bazel.
+1.  **Build the Image** (approx. 5-10 mins):
+    ```bash
+    docker build --platform linux/amd64 -t audio-pipeline-artifact .
+    ```
 
-1. Clone the [VisQOL repository](https://github.com/google/visqol).
-2. Follow their instructions to build the Python API (`bazel build :visqol_lib_py`).
-3. Ensure the generated `visqol` protobufs and library files are accessible in your `PYTHONPATH` or installed in your environment.
+2.  **Configure Environment:**
+    Create a file named `.env` in the root directory. You may refer to the .env.example file for reference:
+    ```ini
+    HF_TOKEN=hf_YourTokenHere
+    NOISE_THRESHOLD=2.5
+    CORRELATION_THRESHOLD=0.75
+    ```
 
-## Installation
+3.  **Run the Pipeline:**
+    ```bash
+    docker run --rm -it --env-file .env audio-pipeline-artifact
+    ```
 
-This project uses `uv` for fast dependency management.
+4.  **VisQOL Validation**
+    To verify that the complex dependencies (VisQOL and its protobuf bindings) are installed correctly without waiting for the full pipeline, users can run this sanity check:
+    ```bash
+    docker run --rm audio-pipeline-artifact python -c "from visqol import visqol_lib_py; print('SUCCESS: VisQOL is installed correctly.')"
+    ```
 
-1. **Clone the repository:**
-```bash
-git clone https://github.com/your-username/audio-robustness-pipeline.git
-cd audio-robustness-pipeline
+## 3. Configuration Parameters
+The pipeline behavior can be tuned using environment variables (in `.env`).
 
-```
+| Parameter | Default | Description |
+| :--- | :--- | :--- |
+| `HF_TOKEN` | *Required* | Hugging Face authentication token for Speaker Diarization. |
+| `NOISE_THRESHOLD` | `2.5` | The minimum VisQOL score improvement required to classify a file as clean/noisy. |
+| `CORRELATION_THRESHOLD` | `0.75` | The minimum Pearson correlation coefficient required to classify a feature as stable/changed. |
+| `CHANGE_THRESHOLD` | `0.05` | The sensitivity for detecting signal changes during the filtering stage. |
 
+---
 
-2. **Create a virtual environment:**
-```bash
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-```
-
-
-3. **Install dependencies:**
-```bash
-uv pip install -r requirements.txt
-
-```
-
-
-4. **Hugging Face Authentication (Pyannote):**
-The speaker diarization module uses `pyannote.audio`, which requires an access token.
-1. Accept `pyannote/speaker-diarization-3.1` user conditions on Hugging Face.
-2. Set your token in the environment or update `demo/noise_pipeline_demo.py`:
-
-
-```python
-# In demo/noise_pipeline_demo.py
-self.pipeline = Pipeline.from_pretrained(
-    "pyannote/speaker-diarization-3.1",
-    token="YOUR_HUGGING_FACE_TOKEN"
-)
-
-```
-
-
-
-## Directory Overview
+## 4. Directory Overview
 
 ```text
 .
@@ -86,45 +74,25 @@ self.pipeline = Pipeline.from_pretrained(
 ├── demo/                     # Concrete Implementations & Demo Assets
 │   ├── audio.py              # Wrappers for VAD (Silero) and Diarization (Pyannote)
 │   ├── audio_samples/        # Raw input audio for the demo
-│   ├── noise_pipeline_demo.py# Concrete classes implementing core interfaces
+│   ├── noise_pipeline_demo.py# Concrete classes implementing core interfaces for the purposes of the demo
 │   └── reference_audio/      # Clean reference files required by VisQOL
 ├── main.py                   # Entry point for the demonstration
-└── requirements.txt          # Python dependencies
-
+├── requirements.txt          # Python dependencies
+├── Dockerfile                # Automated build environment
+└── .env                      # User configuration (Tokens & Thresholds)
 ```
 
-## Running the Demo
+## 5. Understanding the Output from running main.py
+The specific features identified will vary based on your input data, chosen tools, and threshold settings.
 
-The included `main.py` runs a full pass of the pipeline on the dummy audio provided in `demo/audio_samples`.
+For the sample audio included in this artifact, running the pipeline with the **strict thresholds defined in our paper** yields a populated set of **Robust Features** but an empty set of **Enhanced Features**. This is expected behavior for this specific sample subset and demonstrates the pipeline correctly filtering out candidates that do not meet the quality improvement metrics required by the configuration.
 
-1. Ensure you have reference audio files (clean speech samples) in `demo/reference_audio` if using VisQOL in audio mode.
-2. Run the pipeline:
+## 6. Extending the Implementation
 
-```bash
-python main.py
+The framework is built on a set of abstract base classes defined in `core/interfaces.py`. This allows you to swap out any component—whether it is the feature extractor, the noise filter, or the quality measure—without rewriting the core logic.
 
-```
-
-### Expected Output
-
-The script will process the audio, apply filters, and output the lists of features identified as robust or enhanced:
-
-```text
-Refining 16 segments...
-Primary Speaker identified: SPEAKER_01 (Score: 0.85)
-...
-Robust Features: ['F0final_sma_stddev', 'loudness_sma3_amean', ...]
-Enhanced Features: ['pcm_zcr_sma_stddev', 'jitterLocal_sma_amean', ...]
-
-```
-
-## Customizing the Pipeline
-
-The framework is designed to be agnostic to the specific libraries used. To use your own feature extractors, filters, or distance measures, you must implement the interfaces defined in `core/interfaces.py`.
-
-### 1. Implementing a Custom Feature Extractor
-
-If you wish to use `librosa` or `wav2vec` instead of OpenSMILE, create a class that inherits from `BaseFeatureExtractor`.
+### 7. Implementing a Custom Feature Extractor
+To use a different feature set (e.g., `librosa` MFCCs instead of OpenSMILE), create a class that inherits from `BaseFeatureExtractor`.
 
 ```python
 from core.interfaces import BaseFeatureExtractor
@@ -135,43 +103,33 @@ import pandas as pd
 class LibrosaMFCC(BaseFeatureExtractor):
     def extract(self, df: pd.DataFrame) -> pd.DataFrame:
         features = []
+        # The input DataFrame contains 'filename', 'start', and 'end' columns
         for _, row in df.iterrows():
+            # Load the specific segment
             y, sr = librosa.load(row['filename'], sr=16000)
+
+            # Extract features (e.g., MFCCs averaged over time)
             mfcc = np.mean(librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13), axis=1)
-            # Create a dictionary of features
-            feat_dict = {f'mfcc_{i}': val for i, val in enumerate(mfcc)}
-            features.append(feat_dict)
+
+            # Return a dict where keys are feature names
+            features.append({f'mfcc_{i}': val for i, val in enumerate(mfcc)})
+
         return pd.DataFrame(features)
-
 ```
 
-### 2. Implementing a Custom Filter
+New classes, once defined and implemented can be added into the pipeline, as done in the demo with the respective classes and objects. 
 
-To add a specific bandpass filter or a different VAD:
+## 7. Reference
 
-```python
-from core.interfaces import BaseFilter
+For full details on the methodology, background, and results, please refer to our paper:
 
-class MyBandpassFilter(BaseFilter):
-    def apply(self, df: pd.DataFrame) -> pd.DataFrame:
-        # Logic to process audio files referenced in df
-        # Return updated DataFrame (potentially with modified filenames)
-        return df
+**Addressing Extra Voices and Background Noise in Continuous Speech Monitoring: A Case Study on COPD**
+2026 IEEE International Conference on Pervasive Computing and Communications (PerCom)
 
-```
-
-### 3. Integrating into Main
-
-Swap your new classes into the pipeline in `main.py`:
-
-```python
-# ... inside main()
-selector = FeatureSelector(
-    extractor=LibrosaMFCC(),       # Your custom extractor
-    transformation=NoiseReduce(),  # Your custom transformation function
-    characteristic_measure=VisQOL(), # Your custom characteristic measure
-    distance_measure=PearsonCoefficient(), # Your custom distance meausure
-    change_threshold=0.05 # Your change coefficient for your distance measure
-)
-
-```
+```bibtex
+@inproceedings{liaqat2026addressing,
+  title={Addressing Extra Voices and Background Noise in Continuous Speech Monitoring: A Case Study on COPD},
+  author={Liaqat, Salaar and Liaqat, Daniyal and Son, Tatiana and Wu, Robert and Gershon, Andrea and de Lara, Eyal and Mariakakis, Alex},
+  booktitle={2026 IEEE International Conference on Pervasive Computing and Communications (PerCom)},
+  year={2026}
+}

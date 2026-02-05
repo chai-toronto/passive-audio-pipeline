@@ -6,6 +6,9 @@ import torch
 from pyannote.audio import Pipeline
 import os
 import librosa
+from dotenv import load_dotenv
+
+load_dotenv() # Load environment variables
 
 def RemoveSilence(df, threshold=1000, moving_avg_window=0.5):
     output_rows = []
@@ -175,13 +178,34 @@ def smooth_df_segments(df_raw, merge_distance=1.0, min_duration=1.0):
     return final_df
 
 class Diarization:
-    def __init__(self, auth_token=""):
-        self.pipeline = Pipeline.from_pretrained(
-            "pyannote/speaker-diarization-3.1", 
-            token=auth_token
-        )
-        if torch.cuda.is_available():
-            self.pipeline.to(torch.device("cuda"))
+    def __init__(self, auth_token=None):
+        self.token = auth_token or os.getenv("HF_TOKEN")
+        
+        # Check for user override
+        force_cpu = os.getenv("FORCE_CPU", "false").lower() == "true"
+        
+        if not self.token:
+            print("WARNING: No Hugging Face Token found. Diarization will fail.")
+            self.pipeline = None
+            return
+
+        try:
+            self.pipeline = Pipeline.from_pretrained(
+                "pyannote/speaker-diarization-3.1",
+                use_auth_token=self.token
+            )
+            
+            # Logic: Use GPU if available AND not forced to CPU
+            if torch.cuda.is_available() and not force_cpu:
+                print("🚀 Using GPU for Diarization")
+                self.pipeline.to(torch.device("cuda"))
+            else:
+                print("🐢 Using CPU for Diarization")
+                self.pipeline.to(torch.device("cpu"))
+                
+        except Exception as e:
+            print(f"Failed to initialize Diarization pipeline: {e}")
+            self.pipeline = None
 
     def run(self, df):
         if df.empty:
