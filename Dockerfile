@@ -44,7 +44,12 @@ RUN python -c "from visqol import visqol_lib_py; import visqol.pb2.visqol_config
 WORKDIR /app
 COPY requirements.txt .
 
-RUN uv pip install --system torch torchaudio
+# Use this line if want to run on GPU
+# RUN uv pip install --system torch torchaudio
+
+# Use this line if want to run on CPU
+RUN uv pip install --system torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+
 RUN uv pip install --system -r requirements.txt
 
 COPY . .
