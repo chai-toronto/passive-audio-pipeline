@@ -17,7 +17,6 @@ This implementation includes a demonstration using **OpenSMILE** for feature ext
 While main.py executes a demonstration specifically focused on noise removal in speech, the framework is architected for broad extensibility. It is designed to be adapted for other domains and signal types—such as physiological data or time-series sensor readings—allowing researchers to swap in alternative tools for feature extraction, filtering, or transformation to test feature robustness in entirely new contexts.
 
 ---
-
 ## 2. Installation & Execution
 
 **Prerequisites:**
@@ -27,10 +26,21 @@ While main.py executes a demonstration specifically focused on noise removal in 
 
 **Steps:**
 
-1.  **Build the Image** (approx. 5-10 mins):
-    ```bash
-    docker build --platform linux/amd64 -t audio-pipeline-artifact .
-    ```
+1.  **Obtain the Image**
+    We provide two methods for running the pipeline. Using the pre-built image is recommended to avoid long compilation times.
+
+    * **Option A: Pull from Docker Hub (Recommended)**
+        Download the latest verified image from [Docker Hub](https://hub.docker.com/repository/docker/sliaqat/passive-audio-pipeline/general).
+        ```bash
+        docker pull sliaqat/passive-audio-pipeline:latest
+        docker tag sliaqat/passive-audio-pipeline:latest audio-pipeline-artifact
+        ```
+
+    * **Option B: Build from Source**
+        Build the image locally. This takes approx. 5-10 mins as it compiles VisQOL.
+        ```bash
+        docker build --platform linux/amd64 -t audio-pipeline-artifact .
+        ```
 
 2.  **Configure Environment:**
     Create a file named `.env` in the root directory. You may refer to the .env.example file for reference:
@@ -41,6 +51,7 @@ While main.py executes a demonstration specifically focused on noise removal in 
     ```
 
 3.  **Run the Pipeline:**
+    Execute the container using the environment file created in the previous step:
     ```bash
     docker run --rm -it --env-file .env audio-pipeline-artifact
     ```
@@ -50,7 +61,6 @@ While main.py executes a demonstration specifically focused on noise removal in 
     ```bash
     docker run --rm audio-pipeline-artifact python -c "from visqol import visqol_lib_py; print('SUCCESS: VisQOL is installed correctly.')"
     ```
-
 ## 3. Configuration Parameters
 The pipeline behavior can be tuned using environment variables (in `.env`).
 
